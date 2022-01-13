@@ -3,6 +3,7 @@ const app = express();
 require("dotenv").config();
 const cors = require("cors");
 const { MongoClient } = require("mongodb");
+const ObjectId = require("mongoDb").ObjectId;
 const port = process.env.PORT || 4000;
 
 // middleware
@@ -18,7 +19,39 @@ const client = new MongoClient(uri, {
 const run = async () => {
   try {
     await client.connect();
-    console.log(uri);
+    const database = client.db("ToDo_List");
+    const taskListCollection = database.collection("TaskList");
+
+    // Inset a task
+    app.post("/task", async (req, res) => {
+      const data = req.body;
+      const result = await taskListCollection.insertOne(data);
+      res.json(result);
+    });
+    // get all tasks
+    app.get("/task", async (req, res) => {
+      const allTask = await taskListCollection.find().toArray();
+      res.send(allTask);
+    });
+
+    // update the task
+
+    app.put("/task/:id", async (req, res) => {
+      const data = req.body;
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const updateDoc = { $set: data };
+      const result = await taskListCollection.updateOne(query, updateDoc);
+      res.json(result);
+    });
+
+    // delete the task
+    app.delete("/task/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await taskListCollection.deleteOne(query);
+      res.json(result);
+    });
   } finally {
     // await client.close()
   }
